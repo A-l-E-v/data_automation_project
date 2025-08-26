@@ -159,7 +159,7 @@ flowchart TD
     RPDF["pdf.py"]
     RXLS["excel.py"]
     RMAIL["email.py"]
-    RPTPKG["report_stage<br/>(оркестратор PDF/Excel/HTML)"]
+    RPTPKG["report_stage (оркестратор PDF/Excel/HTML)"]
   end
 
   subgraph ML
@@ -177,11 +177,29 @@ flowchart TD
   end
 
   MAINFILE --> RUNNER
-  RUNNER --> IOST & CLN & RPT & EMAILST
-  IOST --> LDR & SQLIO2 & UCFG & ULOG
-  CLN --> CLEAN & VAL & ENC & SEL
-  RPT --> RPLOTS & RPDF & RXLS & RMAIL & RPTPKG
+  RUNNER --> IOST
+  RUNNER --> CLN
+  RUNNER --> RPT
+  RUNNER --> EMAILST
+
+  IOST --> LDR
+  IOST --> SQLIO2
+  IOST --> UCFG
+  IOST --> ULOG
+
+  CLN --> CLEAN
+  CLN --> VAL
+  CLN --> ENC
+  CLN --> SEL
+
+  RPT --> RPLOTS
+  RPT --> RPDF
+  RPT --> RXLS
+  RPT --> RMAIL
+  RPT --> RPTPKG
+
   RUNNER --> MLSTAGE
+
 ```
 
 ---
