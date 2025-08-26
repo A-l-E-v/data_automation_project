@@ -1,0 +1,207 @@
+project:
+  name: data_automation_project
+  logs: logs
+
+logging:
+  level: INFO
+  file: logs/app.log
+
+# -------------------------- Источники --------------------------
+sources:
+  sql:
+    # Прямой SELECT из sales
+    - name: sales
+      dsn: postgresql+psycopg2://ecom_superadmin:ecom_superadmin@localhost:5432/ml_db
+      query: |
+        SELECT order_id, customer_id, order_date, amount
+        FROM sales
+      target: sales
+
+    # JOIN с customers — сохраняем в ту же витрину продаж
+    - name: sales_join_country
+      dsn: postgresql+psycopg2://ecom_superadmin:ecom_superadmin@localhost:5432/ml_db
+      query: |
+        SELECT s.order_id, s.customer_id, s.order_date, s.amount, c.country
+        FROM sales s
+        JOIN customers c ON s.customer_id = c.customer_id
+      target: sales
+
+  csv:
+    - name: sales
+      path: data/raw/sales.csv
+      target: sales
+    - name: customers
+      path: data/raw/customers.csv
+      target: customers
+
+  excel:
+    - name: sales
+      path: data/raw/sales.xlsx
+      sheet: Sheet1
+      target: sales
+
+  api:
+    - name: sales_api
+      url: http://127.0.0.1:5000/sales
+      method: GET
+      json_root: data
+      target: sales
+    # Примеры на будущее:
+    # - name: users
+    #   url: https://dummyjson.com/users
+    #   method: GET
+    #   json_root: users
+    #   paginate: true
+    #   target: users
+    # - name: products
+    #   url: https://dummyjson.com/products
+    #   method: GET
+    #   json_root: products
+    #   paginate: true
+    #   target: products
+
+# -------------------------- Обработка --------------------------
+processing:
+  cleaner:
+    drop_high_missing_columns:
+      threshold: 0.8
+
+# -------------------------- Отчёты и визуализация --------------------------
+reporting:
+  units:
+    currency_label: "руб."        # единица суммы/выручки
+    amount_label: "Выручка"       # локализация названия метрики amount
+    orders_label: "Заказы"        # локализация количества заказов
+    customers_label: "Клиенты"
+    date_format: "%Y-%m"          # формат месяцев на осях/заголовках
+
+  plots:
+    output_dir: reports/images
+    language: "ru"
+    include_seaborn: true          # пробуем рисовать seaborn-графики, если lib доступна
+    top_n_customers: 10            # для топа клиентов (matplotlib/plotly)
+
+    sales:
+      - kind: hist
+        column: amount
+        filename: sales/amount_hist.png
+        title_ru: "Распределение сумм заказов"
+        xlabel_ru: "Сумма заказа, руб."
+        ylabel_ru: "Частота"
+      - kind: hist_trim
+        column: amount
+        trim_quantile: 0.99
+        filename: sales/amount_hist_trim.png
+        title_ru: "Распределение сумм заказов (без 1% выбросов)"
+        xlabel_ru: "Сумма заказа, руб."
+        ylabel_ru: "Частота"
+      - kind: box
+        column: amount
+        filename: sales/amount_box.png
+        title_ru: "Боксплот сумм заказов"
+        xlabel_ru: "Источник данных"
+        ylabel_ru: "Сумма заказа, руб."
+      - kind: ts_orders
+        date_col: order_date
+        filename: sales/orders_over_time.png
+        title_ru: "Динамика количества заказов по дням"
+        xlabel_ru: "Дата"
+        ylabel_ru: "Число заказов, шт."
+      - kind: top_customers
+        id_col: customer_id
+        top_n: 10
+        filename: sales/top_customers.png
+        title_ru: "Топ-10 клиентов по количеству заказов"
+        xlabel_ru: "ID клиента (категория)"
+        ylabel_ru: "Количество заказов, шт."
+      - kind: monthly_revenue
+        date_col: order_date
+        amount_col: amount
+        filename: sales/monthly_revenue.png
+        title_ru: "Выручка по месяцам (все источники)"
+        xlabel_ru: "Месяц"
+        ylabel_ru: "Выручка, руб."
+      - kind: monthly_revenue_by_source
+        date_col: order_date
+        amount_col: amount
+        filename: sales/monthly_revenue_by_source.png
+        title_ru: "Выручка по месяцам и источникам (DB/FILE/API)"
+        xlabel_ru: "Месяц"
+        ylabel_ru: "Выручка, руб."
+      - kind: source_share_pie
+        filename: sales/source_share_pie.png
+        title_ru: "Доля записей по источникам"
+      - kind: cumulative_revenue_by_source
+        date_col: order_date
+        amount_col: amount
+        filename: sales/cumulative_revenue_by_source.png
+        title_ru: "Накопленная выручка по источникам"
+        xlabel_ru: "Дата"
+        ylabel_ru: "Накопленная выручка, руб."
+
+    combined:
+      - kind: corr
+        filename: combined/corr_matrix.png
+        title_ru: "Корреляционная матрица (числовые признаки)"
+
+  pdf:
+    output: reports/pdf/report.pdf
+    title: "Сводный отчёт по продажам (мульти-источник)"
+    author: ""
+    intro_extra:
+      - "Единицы измерения: суммы — руб.; количество — шт."
+      - "Данные: SQL/CSV/Excel/API."
+      - "Классификация: целевая метка = чек ≥ 80-й перцентиль по сумме чека."
+      - "Метрики: ROC-AUC и F1 для классификации; RMSE/MAE/R² для регрессии."
+      - "Идентификаторы трактуются как категориальные ключи; графики id↔id не строятся."
+    logo_path: assets/images/Synergy-logo.png
+    fonts_dir: assets/fonts
+    university: "Московский финансово-промышленный университет «Синергия»"
+    project_type: "ИТОГОВЫЙ ПРОЕКТ"
+    course: "по курсу «Инженер машинного обучения»"
+    project_title: "«АВТОМАТИЗАЦИЯ ОБРАБОТКИ ДАННЫХ»"
+    student: "Слушатель: Егоров А. А."
+    group: "Группа: группа ИМО-92501/2МОп"
+    city_year: "Москва 2025"
+
+  excel:
+    output: reports/excel/report.xlsx
+    sheets:       
+      - name: "sales_cleaned"
+        source: "cleaned"
+      - name: "raw_combined"
+        source: "raw"
+      - name: "aggregates_by_source"
+        source: "aggregates"
+      - name: "metrics"
+        source: "metrics"
+
+# -------------------------- Почта --------------------------
+email:
+  enabled: true
+  smtp:
+    host: localhost
+    port: 1025
+    use_tls: false
+  from: "noreply@example.com"
+  to: ["you@example.com"]
+  subject: "Pipeline report"
+  body: "Отчёт сформирован. Внутри – графики по источникам, сравнение с БД и сводные таблицы."
+
+# -------------------------- Артефакты --------------------------
+artifacts:
+  paths:
+    raw: data/processed/_combined_raw.parquet
+    cleaned: data/processed/cleaned.parquet
+
+# -------------------------- ML --------------------------
+ml:
+  enabled: true
+  models_dir: "models"
+  classification:
+    enabled: true
+    target: null         # auto: high_value по квантилю
+    threshold_q: 0.80
+  regression:
+    enabled: true
+    target: "amount"

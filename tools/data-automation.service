@@ -1,0 +1,12 @@
+[Unit]
+Description=Data Automation Pipeline
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/USER/data_automation_project
+ExecStart=/home/USER/data_automation_project/.venv/bin/python -m src.main --config config/config.yaml
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
