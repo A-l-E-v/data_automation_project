@@ -33,54 +33,54 @@
 ### 🔹 Общая архитектура
 ```mermaid
 flowchart LR
-  subgraph SRC[Источники]
-    CSV[CSV\n(data/raw/*.csv)]
-    XLSX[Excel\n(data/raw/*.xlsx)]
-    SQL[(PostgreSQL\nJOIN + SELECT)]
-    API[HTTP API\n(mock_api.py)]
+  subgraph SRC["Источники"]
+    CSV["CSV<br/>data/raw/*.csv"]
+    XLSX["Excel<br/>data/raw/*.xlsx"]
+    SQL["PostgreSQL<br/>JOIN + SELECT"]
+    API["HTTP API<br/>(mock_api.py)"]
   end
 
-  CFG[config.yaml]
-  MAIN[CLI: python -m src.main]
-  RUNNER[Runner]
+  CFG["config.yaml"]
+  MAIN["CLI: python -m src.main"]
+  RUNNER["Runner"]
 
-  subgraph IO[IO Stage]
-    LOADER[loader.py\nCSV/Excel/API]
-    SQLIO[sql.py\nDSN+Query]
-    MERGE[Объединение витрин]
+  subgraph IO["IO Stage"]
+    LOADER["loader.py<br/>CSV/Excel/API"]
+    SQLIO["sql.py<br/>DSN+Query"]
+    MERGE["Объединение витрин"]
   end
 
-  RAW[(processed/_combined_raw.parquet)]
+  RAW["processed/_combined_raw.parquet"]
 
-  subgraph CLEAN[Clean Stage]
-    VALID[validator.py]
-    IMPUTE[impute_missing]
-    ENCODE[encode_categorical]
-    SCALE[scale_numeric]
-    PARSE[parse_dates]
+  subgraph CLEAN["Clean Stage"]
+    VALID["validator.py"]
+    IMPUTE["impute_missing"]
+    ENCODE["encode_categorical"]
+    SCALE["scale_numeric"]
+    PARSE["parse_dates"]
   end
 
-  CLEANED[(processed/cleaned.parquet)]
+  CLEANED["processed/cleaned.parquet"]
 
-  subgraph REPORT[Reporting]
-    PLOTS[plots.py\nMatplotlib]
-    SEABORN[seaborn_plots.py]
-    PLOTLY[plotly_charts.py]
-    PDF[pdf.py]
-    XLS[excel.py]
+  subgraph REPORT["Reporting"]
+    PLOTS["plots.py<br/>Matplotlib"]
+    SEABORN["seaborn_plots.py"]
+    PLOTLY["plotly_charts.py"]
+    PDF["pdf.py"]
+    XLS["excel.py"]
   end
 
-  EMAIL[email.py]
-  LOGS[(logs/app.log)]
+  EMAIL["email.py"]
+  LOGS["logs/app.log"]
 
-  subgraph DB[PostgreSQL]
-    INITSQL[init_schema.sql]
-    METRICS[export_metrics.py]
-    LOADCSV[load_csv_to_db.py]
+  subgraph DB["PostgreSQL"]
+    INITSQL["init_schema.sql"]
+    METRICS["export_metrics.py"]
+    LOADCSV["load_csv_to_db.py"]
   end
 
-  CRON[Cron/systemd]
-  TESTS[pytest]
+  CRON["Cron/systemd"]
+  TESTS["pytest"]
 
   %% Связи
   CFG --> MAIN --> RUNNER
@@ -88,7 +88,9 @@ flowchart LR
   IO --> RAW
   RAW --> CLEAN --> CLEANED
   CLEANED --> REPORT
-  REPORT --> PDF & XLS & EMAIL
+  REPORT --> PDF
+  REPORT --> XLS
+  REPORT --> EMAIL
   REPORT --> DB
   RUNNER --> LOGS
   CRON --> MAIN
@@ -130,48 +132,55 @@ sequenceDiagram
 ### 🔹 Модульная структура
 ```mermaid
 flowchart TD
-  MAINFILE[main.py]
+  MAINFILE["main.py"]
+
   subgraph Pipelines
-    RUNNER[runner.py]
-    IOST[io_stage.py]
-    CLN[clean_stage.py]
-    RPT[report_stage.py]
-    EMAILST[email_stage.py]
+    RUNNER["runner.py"]
+    IOST["io_stage.py"]
+    CLN["clean_stage.py"]
+    RPT["report_stage.py"]
+    EMAILST["email_stage.py"]
   end
+
   subgraph IO
-    LDR[loader.py]
-    SQLIO[sql.py]
+    LDR["loader.py"]
+    SQLIO2["sql.py"]
   end
+
   subgraph Processing
-    CLEAN[cleaner.py]
-    VAL[validator.py]
-    ENC[encoder.py]
-    SEL[selector.py]
+    CLEAN["cleaner.py"]
+    VAL["validator.py"]
+    ENC["encoder.py"]
+    SEL["selector.py"]
   end
+
   subgraph Reporting
-    PLOTS[plots.py]
-    PDF[pdf.py]
-    XLS[excel.py]
-    MAIL[email.py]
-    RPTPKG[report_stage/ (оркестратор PDF/Excel/HTML)]
+    RPLOTS["plots.py"]
+    RPDF["pdf.py"]
+    RXLS["excel.py"]
+    RMAIL["email.py"]
+    RPTPKG["report_stage<br/>(оркестратор PDF/Excel/HTML)"]
   end
+
   subgraph ML
-    MLSTAGE[ml/stage.py]
-    MLC[ml/classification.py]
-    MLR[ml/regression.py]
-    MLF[ml/features.py]
-    MLP[ml/plots.py]
+    MLSTAGE["ml/stage.py"]
+    MLC["ml/classification.py"]
+    MLR["ml/regression.py"]
+    MLF["ml/features.py"]
+    MLP["ml/plots.py"]
   end
+
   subgraph Utils
-    UCFG[config.py]
-    ULOG[logging.py]
-    UPERS[persist.py]
+    UCFG["config.py"]
+    ULOG["logging.py"]
+    UPERS["persist.py"]
   end
+
   MAINFILE --> RUNNER
   RUNNER --> IOST & CLN & RPT & EMAILST
-  IOST --> LDR & SQLIO & UCFG & ULOG
+  IOST --> LDR & SQLIO2 & UCFG & ULOG
   CLN --> CLEAN & VAL & ENC & SEL
-  RPT --> PLOTS & PDF & XLS & MAIL & RPTPKG
+  RPT --> RPLOTS & RPDF & RXLS & RMAIL & RPTPKG
   RUNNER --> MLSTAGE
 ```
 
@@ -261,7 +270,6 @@ sources:
 ```
 
 ### PDF‑отчёт и титульный лист
-  
 Ключи для настройки:
 ```yaml
 reporting:

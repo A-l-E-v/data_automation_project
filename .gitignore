@@ -11,17 +11,17 @@ env/
 venv/
 
 # Logs
-logs/
-*.log
+# logs/
+# *.log
 
 # Data artifacts
 data/processed/*
 !data/processed/.gitkeep
 
 # Reports
-reports/pdf/*
-reports/excel/*
-reports/images/*
+# reports/pdf/*
+# reports/excel/*
+# reports/images/*
 !reports/pdf/.gitkeep
 !reports/excel/.gitkeep
 !reports/images/.gitkeep
@@ -59,11 +59,6 @@ Thumbs.db
 .venv/
 __pycache__/
 .pytest_cache/
-logs/
-reports/
-models/
-data/processed/
-data/raw/*
 !data/raw/.keep
 *.pyc
 .DS_Store
